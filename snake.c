@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
-
+#include <string.h>
 #include "config.h"
 
 #define WIGHT  (field[1].x - field[0].x - 1)
@@ -34,8 +34,10 @@ void graw_game();
 void  collisian_food();
 void collisian_wall();
 void update_screen();
+void draw_game_over();
 
 void draw_field() {
+	attron(COLOR_PAIR(3));
         for (int i = field[0].x; i <= field[1].x; i++) {
                 mvprintw(field[0].y, i, "-");
                 mvprintw(field[1].y, i, "-");
@@ -44,16 +46,21 @@ void draw_field() {
                 mvprintw(i, field[0].x, "|");
                 mvprintw(i, field[1].x, "|");
         }
+	attroff(COLOR_PAIR(3));
 }
 
 void draw_snake() {
+	attron(COLOR_PAIR(1));
         mvprintw(snake[0].y, snake[0].x, "@");
         for (int i = 1; i < lenght; i++)
                 mvprintw(snake[i].y, snake[i].x, "O");
+	attroff(COLOR_PAIR(1));
 }
 
 void draw_food(int num) {
+	attron(COLOR_PAIR(2));
         mvprintw(food[num].y, food[num].x, "&");
+	attroff(COLOR_PAIR(2));
 }
 
 void init_game() {
@@ -94,10 +101,13 @@ void collisian_wall(){
          || snake[0].x == field[1].x
          || snake[0].y == field[0].y
          || snake[0].y == field[1].y) {
-                endwin();
-                printf("GAME OVER!\n");
-                exit(0);
-        }
+		clear();
+        	draw_game_over();
+		nodelay(stdscr, FALSE);  // включаем блокирующий ввод
+        	getch();                 // ждём нажатие клавиши
+        	endwin();                // завершаем ncurses
+        	exit(0);                 // выходим
+	}
 }
 
 void update_screen() {
@@ -122,12 +132,25 @@ void update_screen() {
         collisian_wall();
 }
 
+void draw_game_over() {
+	int row, col;
+	getmaxyx(stdscr, row, col);
+	const char *msg = "GAME OVER!";
+	mvprintw(row / 2, (col - strlen(msg)) / 2, "%s", msg);
+	refresh();
+}
+
 int main() {
         initscr();
         curs_set(0);
         keypad(stdscr, TRUE);
         nodelay(stdscr, TRUE);
         noecho();
+	
+	start_color();
+	init_pair(1, COLOR_GREEN, COLOR_BLACK);
+	init_pair(2, COLOR_YELLOW, COLOR_BLACK);
+	init_pair(3, COLOR_WHITE, COLOR_BLACK);
 
         init_game();
         while(1) {
